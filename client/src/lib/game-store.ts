@@ -1,32 +1,40 @@
 import { create } from 'zustand';
 
-export type GameMode = 'normal' | 'boss';
-
-export type PlayerSetup = {
-  id: string; // Unique ID
+export interface Eraser {
+  id: string;
   name: string;
-  isCpu: boolean;
-  eraserId: string; // "red", "blue", or "custom-1"
-  team: number; // 1 or 2
-};
+  color: string;
+  attack: number;
+  defense: number;
+  speed: number;
+  weight: number;
+  ability?: string;
+  type?: 'normal' | 'boss';
+}
+
+export interface Player {
+  id: string;
+  name: string;
+  eraserId: string;
+  eraser: Eraser;
+  team: number;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  rotation: number;
+}
 
 interface GameStore {
-  mode: GameMode;
-  players: PlayerSetup[];
-  setMode: (mode: GameMode) => void;
-  setPlayers: (players: PlayerSetup[]) => void;
-  updatePlayer: (id: string, updates: Partial<PlayerSetup>) => void;
+  players: Player[];
+  setPlayers: (players: Player[]) => void;
+  mode: 'normal' | 'boss';
+  setMode: (mode: 'normal' | 'boss') => void;
 }
 
 export const useGameStore = create<GameStore>((set) => ({
-  mode: 'normal',
-  players: [
-    { id: '1', name: 'Player 1', isCpu: false, eraserId: 'red', team: 1 },
-    { id: '2', name: 'CPU 1', isCpu: true, eraserId: 'blue', team: 2 },
-  ],
-  setMode: (mode) => set({ mode }),
+  players: [],
   setPlayers: (players) => set({ players }),
-  updatePlayer: (id, updates) => set((state) => ({
-    players: state.players.map((p) => p.id === id ? { ...p, ...updates } : p)
-  })),
+  mode: 'normal',
+  setMode: (mode) => set({ mode }),
 }));
