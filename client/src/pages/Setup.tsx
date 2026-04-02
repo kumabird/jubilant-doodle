@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Plus, Trash2 } from "lucide-react";
 import { useGameStore } from "@/lib/game-store";
@@ -19,40 +19,39 @@ const DEFAULT_ERASERS: Eraser[] = [
   { id: 'red', name: '赤消しゴム', color: '#ef4444', attack: 100, defense: 150, speed: 80, weight: 100, type: 'normal' },
   { id: 'blue', name: '青消しゴム', color: '#3b82f6', attack: 120, defense: 100, speed: 100, weight: 100, type: 'normal' },
   { id: 'green', name: '緑消しゴム', color: '#22c55e', attack: 150, defense: 100, speed: 100, weight: 100, type: 'normal' },
-  { id: 'yellow', name: '黄色消しゴム', color: '#eab308', attack: 80, defense: 80, speed: 150, weight: 100, type: 'normal' },
-  { id: 'pink', name: 'ピンク消しゴム', color: '#ec4899', attack: 110, defense: 110, speed: 110, weight: 100, type: 'normal' },
+  { id: 'orange', name: '橙消しゴム', color: '#f97316', attack: 110, defense: 110, speed: 110, weight: 100, type: 'normal' },
   { id: 'black', name: '黒消しゴム', color: '#1f2937', attack: 130, defense: 130, speed: 90, weight: 120, type: 'normal' },
 ];
 
 export default function Setup() {
-  const { players, setPlayers, setMode } = useGameStore();
-  const [mode, setLocalMode] = useState<'normal' | 'boss'>('normal');
+  const [, setLocation] = useLocation();
+  const { setPlayers, setMode } = useGameStore();
+  const [gameMode, setGameMode] = useState<'normal' | 'boss'>('normal');
   const [customErasers, setCustomErasers] = useState<Eraser[]>([]);
 
-  const [playerForms, setPlayerForms] = useState(
-    players.length > 0 ? players : [{ id: '1', name: 'Player 1', color: '#ef4444' }]
-  );
+  const [playerForms, setPlayerForms] = useState([
+    { id: '1', name: 'Player 1', eraserId: 'red' }
+  ]);
 
   // Load custom erasers from API
   useState(() => {
     fetch('/api/custom-erasers')
       .then(r => r.json())
-      .then(data => setCustomErasers(data))
+      .then(data => setCustomErasers(data || []))
       .catch(console.error);
   }, []);
 
   const allErasers = [...DEFAULT_ERASERS, ...customErasers];
-  const availableErasers = mode === 'boss' 
-    ? allErasers.filter(e => e.type !== 'normal' || e.id !== 'black')
-    : allErasers;
+  const availableErasers = allErasers;
 
   const handleAddPlayer = () => {
+    const nextId = String(playerForms.length + 1);
     setPlayerForms([
       ...playerForms,
       { 
-        id: String(playerForms.length + 1),
+        id: nextId,
         name: `Player ${playerForms.length + 1}`,
-        color: '#3b82f6'
+        eraserId: 'blue'
       }
     ]);
   };
@@ -76,13 +75,13 @@ export default function Setup() {
     }
 
     const updatedPlayers = playerForms.map((form, index) => {
-      const eraser = availableErasers.find(e => e.id === form.color) || availableErasers[0];
+      const eraser = availableErasers.find(e => e.id === form.eraserId) || availableErasers[0];
       return {
         id: form.id,
         name: form.name,
-        eraserId: form.color,
+        eraserId: form.eraserId,
         eraser: eraser,
-        team: mode === 'boss' ? (index === 0 ? 1 : 2) : index + 1,
+        team: gameMode === 'boss' ? (index === 0 ? 1 : 2) : index + 1,
         x: Math.random() * 400 + 100,
         y: Math.random() * 300 + 100,
         vx: 0,
@@ -92,69 +91,51 @@ export default function Setup() {
     });
 
     setPlayers(updatedPlayers);
-    setMode(mode);
+    setMode(gameMode);
+    setLocation('/game');
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
+    <div className="min-h-screen p-4 md:p-8 max-w-5xl mx-auto flex flex-col md:flex-row gap-8">
+      <div className="flex-1">
         <header className="flex items-center gap-4 mb-8">
           <Link href="/">
             <button className="p-3 bg-white rounded-full shadow-md hover:bg-slate-50 transition-colors">
               <ChevronLeft className="w-6 h-6" />
             </button>
           </Link>
-          <h1 className="text-4xl font-black text-foreground">ゲーム設定</h1>
+          <h1 className="text-3xl font-black text-foreground">ゲーム設定</h1>
         </header>
 
-        {/* Mode Selection */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-4">ゲームモード</h2>
-          <div className="flex gap-4">
-            <button
-              onClick={() => setLocalMode('normal')}
-              className={`flex-1 py-4 px-6 rounded-2xl font-bold text-lg transition-all ${
-                mode === 'normal'
-                  ? 'bg-primary text-white shadow-lg scale-105'
-                  : 'bg-white text-foreground hover:bg-slate-50'
-              }`}
+        <div className="glass-panel p-6 rounded-3xl space-y-6">
+          <div className="flex gap-4 p-2 bg-slate-100 rounded-2xl">
+            <button 
+              onClick={() => setGameMode('normal')}
+              className={`flex-1 py-3 rounded-xl font-bold transition-all ${gameMode === 'normal' ? 'bg-white shadow text-primary' : 'text-slate-500 hover:bg-white/50'}`}
             >
-              🎯 ノーマル (自由戦)
+              ノーマル
             </button>
-            <button
-              onClick={() => setLocalMode('boss')}
-              className={`flex-1 py-4 px-6 rounded-2xl font-bold text-lg transition-all ${
-                mode === 'boss'
-                  ? 'bg-accent text-white shadow-lg scale-105'
-                  : 'bg-white text-foreground hover:bg-slate-50'
-              }`}
+            <button 
+              onClick={() => setGameMode('boss')}
+              className={`flex-1 py-3 rounded-xl font-bold transition-all ${gameMode === 'boss' ? 'bg-white shadow text-accent' : 'text-slate-500 hover:bg-white/50'}`}
             >
-              👑 ボスモード
+              ボスモード
             </button>
-          </div>
-          <p className="mt-4 text-sm text-muted-foreground">
-            {mode === 'normal' 
-              ? '全員が対等に戦うモードです' 
-              : '1人のボスが複数のチャレンジャーに挑まれます'}
-          </p>
-        </div>
-
-        {/* Players Setup */}
-        <div className="bg-white rounded-3xl p-8 shadow-md">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold">プレイヤー設定</h2>
-            {playerForms.length < 4 && (
-              <button
-                onClick={handleAddPlayer}
-                className="p-3 bg-primary text-white rounded-full hover:brightness-110 transition-all"
-              >
-                <Plus className="w-6 h-6" />
-              </button>
-            )}
           </div>
 
           <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-bold text-lg">プレイヤー</h2>
+              {playerForms.length < 4 && (
+                <button
+                  onClick={handleAddPlayer}
+                  className="p-2 bg-primary text-white rounded-lg hover:brightness-110 transition-all"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+
             <AnimatePresence>
               {playerForms.map((form, index) => (
                 <motion.div
@@ -162,22 +143,18 @@ export default function Setup() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
-                  className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl"
+                  className="flex items-center gap-3"
                 >
-                  <span className="font-bold text-lg text-slate-400 w-8">P{index + 1}</span>
-                  
-                  <input
-                    type="text"
+                  <input 
+                    type="text" 
                     value={form.name}
                     onChange={e => handlePlayerChange(index, 'name', e.target.value)}
-                    placeholder="プレイヤー名"
-                    className="flex-1 bg-white border-2 border-slate-200 px-4 py-2 rounded-xl font-bold focus:outline-none focus:border-primary"
+                    className="flex-1 bg-slate-50 border-2 border-slate-200 px-3 py-2 rounded-lg font-bold focus:outline-none focus:border-primary text-sm"
                   />
-
                   <select
-                    value={form.color}
-                    onChange={e => handlePlayerChange(index, 'color', e.target.value)}
-                    className="bg-white border-2 border-slate-200 px-4 py-2 rounded-xl font-bold focus:outline-none focus:border-primary"
+                    value={form.eraserId}
+                    onChange={e => handlePlayerChange(index, 'eraserId', e.target.value)}
+                    className="bg-slate-50 border-2 border-slate-200 px-3 py-2 rounded-lg font-bold focus:outline-none focus:border-primary text-sm"
                   >
                     {availableErasers.map(eraser => (
                       <option key={eraser.id} value={eraser.id}>
@@ -185,11 +162,10 @@ export default function Setup() {
                       </option>
                     ))}
                   </select>
-
                   {playerForms.length > 1 && (
                     <button
                       onClick={() => handleRemovePlayer(index)}
-                      className="p-2 text-destructive hover:bg-destructive/10 rounded-xl transition-colors"
+                      className="p-2 text-slate-400 hover:text-destructive transition-colors"
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
@@ -199,22 +175,13 @@ export default function Setup() {
             </AnimatePresence>
           </div>
 
-          {mode === 'boss' && playerForms.length > 0 && (
-            <div className="mt-6 p-4 bg-accent/10 rounded-xl border-2 border-accent/20">
-              <p className="text-sm font-bold text-accent">
-                ℹ️ {playerForms[0].name} がボス、その他がチャレンジャーになります
-              </p>
-            </div>
-          )}
+          <button 
+            onClick={handleStart}
+            className="w-full playful-shadow bg-primary text-white py-4 rounded-2xl font-bold text-xl flex items-center justify-center gap-2 hover:brightness-110"
+          >
+            ゲーム開始
+          </button>
         </div>
-
-        {/* Start Button */}
-        <button
-          onClick={handleStart}
-          className="w-full mt-8 playful-shadow bg-gradient-to-r from-primary to-accent text-white py-6 rounded-2xl font-black text-2xl hover:brightness-110 transition-all"
-        >
-          🎮 ゲーム開始
-        </button>
       </div>
     </div>
   );
