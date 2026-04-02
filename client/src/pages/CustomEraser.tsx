@@ -171,22 +171,21 @@ export default function CustomEraser() {
             ))}
           </div>
 
-          <div className="space-y-4">
-            <h3 className="font-bold text-lg text-foreground">特性を選択 (オプション)</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <div className="space-y-3">
+            <h3 className="font-bold text-sm text-muted-foreground">特性選択 (オプション)</h3>
+            <div className="grid grid-cols-1 gap-2">
               {(formType === 'normal' ? ABILITIES_NORMAL : ABILITIES_BOSS).map(ability => (
                 <button
                   key={ability.id}
                   onClick={() => setSelectedAbility(selectedAbility === ability.id ? null : ability.id)}
-                  className={`p-3 rounded-xl text-sm font-bold border-2 transition-all ${
+                  className={`p-2 text-left rounded-lg text-xs font-bold border-2 transition-all ${
                     selectedAbility === ability.id
                       ? 'bg-primary text-white border-primary'
                       : 'bg-white border-slate-200 hover:border-primary'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  } ${(selectedAbility !== ability.id && remaining < ability.cost) ? 'opacity-50 cursor-not-allowed' : ''}`}
                   disabled={selectedAbility !== ability.id && remaining < ability.cost}
                 >
-                  <div>{ability.label}</div>
-                  <div className="text-xs opacity-80">({ability.cost}pt)</div>
+                  {ability.label} ({ability.cost}pt)
                 </button>
               ))}
             </div>
@@ -195,7 +194,7 @@ export default function CustomEraser() {
           <button 
             onClick={handleSave}
             disabled={createMutation.isPending || !formData.name.trim()}
-            className="w-full playful-shadow bg-primary text-white py-4 rounded-2xl font-bold text-xl flex items-center justify-center gap-2 hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className="w-full playful-shadow bg-primary text-white py-4 rounded-2xl font-bold text-xl flex items-center justify-center gap-2 hover:brightness-110 disabled:opacity-50 disabled:tran[...]"
           >
             <Save />
             {createMutation.isPending ? '保存中...' : '保存する'}
@@ -226,40 +225,32 @@ export default function CustomEraser() {
                 key={eraser.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100"
+                className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4"
               >
-                <div className="flex items-center gap-3 mb-2">
-                  <div 
-                    className="w-10 h-10 rounded-lg shadow-inner"
-                    style={{ backgroundColor: eraser.color }}
-                  />
-                  <div className="flex-1 overflow-hidden">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-bold truncate">{eraser.name}</h3>
-                      {eraser.type === 'boss' && (
-                        <span className="bg-accent/20 text-accent-foreground text-[10px] px-2 py-0.5 rounded-full font-bold">ボス</span>
-                      )}
-                    </div>
+                <div 
+                  className="w-10 h-10 rounded-lg shadow-inner"
+                  style={{ backgroundColor: eraser.color }}
+                />
+                <div className="flex-1 overflow-hidden">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold truncate">{eraser.name}</h3>
+                    {eraser.type === 'boss' && (
+                      <span className="bg-accent/20 text-accent-foreground text-[10px] px-2 py-0.5 rounded-full font-bold">ボス</span>
+                    )}
                   </div>
-                  <button 
-                    onClick={() => deleteMutation.mutate(eraser.id)}
-                    disabled={deleteMutation.isPending}
-                    className="p-2 text-slate-400 hover:text-destructive hover:bg-destructive/10 rounded-xl transition-colors disabled:opacity-50"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                </div>
-                <div className="text-xs text-slate-400 flex gap-2 flex-wrap">
-                  <span>攻:{eraser.attack}</span>
-                  <span>防:{eraser.defense}</span>
-                  <span>速:{eraser.speed}</span>
-                  <span>重:{eraser.weight}</span>
-                </div>
-                {eraser.ability && (
-                  <div className="mt-2 text-xs font-bold bg-primary/10 text-primary px-2 py-1 rounded-lg inline-block">
-                    特性: {getAbilityLabel(eraser.ability)}
+                  <div className="text-xs text-slate-400 flex gap-2 mt-1">
+                    <span>攻:{eraser.attack}</span>
+                    <span>防:{eraser.defense}</span>
+                    <span>速:{eraser.speed}</span>
                   </div>
-                )}
+                </div>
+                <button 
+                  onClick={() => deleteMutation.mutate(eraser.id)}
+                  disabled={deleteMutation.isPending}
+                  className="p-2 text-slate-400 hover:text-destructive hover:bg-destructive/10 rounded-xl transition-colors disabled:opacity-50"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
               </motion.div>
             ))}
           </div>
@@ -269,7 +260,6 @@ export default function CustomEraser() {
   );
 }
 
-// ユーティリティ関数
 function getAbilityLabel(abilityId: string): string {
   const labels: Record<string, string> = {
     [ABILITY_TYPES.COATING_ATTACK_DOWN]: 'コーティング：攻撃力低下',
