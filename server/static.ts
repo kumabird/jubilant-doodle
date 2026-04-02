@@ -1,11 +1,9 @@
-// server/static.ts
 import express, { type Express } from "express";
 import fs from "fs";
 import path from "path";
 
 export function serveStatic(app: Express) {
-  // dist/index.cjs は dist/ ディレクトリにあり、public/ も同じディレクトリにある
-  const distPath = path.resolve(process.cwd(), "dist/public");
+  const distPath = path.resolve(__dirname, "public");
 
   if (!fs.existsSync(distPath)) {
     throw new Error(
