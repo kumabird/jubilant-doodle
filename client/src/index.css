@@ -1,0 +1,78 @@
+@import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Nunito:wght@400;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-sans: 'Nunito', 'M PLUS Rounded 1c', sans-serif;
+    --font-display: 'M PLUS Rounded 1c', sans-serif;
+
+    /* Playful Startup Palette */
+    --background: 210 50% 98%;
+    --foreground: 222 47% 15%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 15%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 15%;
+    
+    --primary: 333 71% 51%; /* Playful Pink/Magenta */
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 199 89% 48%; /* Bouncy Blue */
+    --secondary-foreground: 0 0% 100%;
+    
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    
+    --accent: 47 100% 50%; /* Cheerful Yellow */
+    --accent-foreground: 222 47% 15%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 333 71% 51%;
+
+    --radius: 1rem;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased selection:bg-primary/30;
+    font-family: var(--font-sans);
+    background-image: 
+      radial-gradient(circle at 100% 0%, hsla(333, 71%, 51%, 0.08) 0%, transparent 40%),
+      radial-gradient(circle at 0% 100%, hsla(199, 89%, 48%, 0.08) 0%, transparent 40%);
+    background-attachment: fixed;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    @apply font-bold tracking-tight;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-white/80 backdrop-blur-md border border-white/40 shadow-xl;
+  }
+  
+  .playful-shadow {
+    box-shadow: 0 8px 0 0 rgba(0,0,0,0.1), 0 15px 20px -5px rgba(0,0,0,0.1);
+  }
+  
+  .playful-shadow:active:not(:disabled) {
+    box-shadow: 0 0px 0 0 rgba(0,0,0,0.1), 0 5px 10px -5px rgba(0,0,0,0.1);
+    transform: translateY(8px);
+  }
+}
+
+/* Desk Pattern Background */
+.desk-pattern {
+  background-color: #e5e5f7;
+  background-image:  repeating-radial-gradient( circle at 0 0, transparent 0, #e5e5f7 10px ), repeating-linear-gradient( #d1d5db55, #d1d5db55 );
+}
