@@ -3,7 +3,8 @@ import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { ChevronLeft, Plus, Save, Trash2, Hexagon } from "lucide-react";
 import { useCustomErasers, useCreateCustomEraser, useDeleteCustomEraser } from "@/hooks/use-custom-erasers";
-import type { InsertCustomEraser } from "@shared/schema";
+import type { InsertCustomEraser, AbilityType } from "@shared/schema";
+import { ABILITY_TYPES } from "@shared/schema";
 
 export default function CustomEraser() {
   const { data: erasers = [], isLoading } = useCustomErasers();
@@ -11,10 +12,29 @@ export default function CustomEraser() {
   const deleteMutation = useDeleteCustomEraser();
 
   const [formType, setFormType] = useState<'normal' | 'boss'>('normal');
+  const [selectedAbility, setSelectedAbility] = useState<AbilityType | null>(null);
+  
   const maxPoints = formType === 'normal' ? 500 : 2500;
 
+  const ABILITIES_NORMAL = [
+    { id: ABILITY_TYPES.COATING_ATTACK_DOWN, label: 'コーティング：攻撃力低下', cost: 50 },
+    { id: ABILITY_TYPES.COATING_DEFENSE_DOWN, label: 'コーティング：防御力低下', cost: 50 },
+    { id: ABILITY_TYPES.COATING_SLIP, label: 'コーティング：滑る', cost: 50 },
+    { id: ABILITY_TYPES.SPIN_BLOW, label: '回転：遠く吹き飛ばす', cost: 50 },
+    { id: ABILITY_TYPES.SPIN_SLOW, label: '回転：相手動き悪くする', cost: 50 },
+    { id: ABILITY_TYPES.EXPLOSION_BLOW, label: '爆発：遠く吹き飛ばす', cost: 50 },
+    { id: ABILITY_TYPES.EXPLOSION_BARRIER, label: '爆発：近づけない', cost: 50 },
+  ];
+
+  const ABILITIES_BOSS = [
+    ...ABILITIES_NORMAL,
+    { id: ABILITY_TYPES.BIG_SPIN_BARRIER, label: '大回転：近づけない＆吹き飛ばす', cost: 150 },
+    { id: ABILITY_TYPES.JET_RUSH, label: 'ジェット：相手に当たるまで進む', cost: 150 },
+    { id: ABILITY_TYPES.MISSILE_ATTACK, label: 'ミサイル：毎ターン3つ発射', cost: 150 },
+  ];
+
   const [formData, setFormData] = useState<Omit<InsertCustomEraser, 'type'>>({
-    name: "オレジナル",
+    name: "オリジナル",
     color: "#3b82f6",
     attack: 100,
     defense: 100,
@@ -22,7 +42,13 @@ export default function CustomEraser() {
     weight: 100
   });
 
-  const totalUsed = formData.attack + formData.defense + formData.speed + formData.weight;
+  const abilityCost = selectedAbility
+    ? (formType === 'normal'
+        ? ABILITIES_NORMAL.find(a => a.id === selectedAbility)?.cost || 0
+        : ABILITIES_BOSS.find(a => a.id === selectedAbility)?.cost || 0)
+    : 0;
+
+  const totalUsed = formData.attack + formData.defense + formData.speed + formData.weight + abilityCost;
   const remaining = maxPoints - totalUsed;
 
   const handleStatChange = (stat: keyof typeof formData, value: number) => {
@@ -37,17 +63,19 @@ export default function CustomEraser() {
     if (!formData.name.trim()) return;
     createMutation.mutate({
       ...formData,
-      type: formType
+      type: formType,
+      ability: selectedAbility || undefined
     }, {
       onSuccess: () => {
         setFormData({
-          name: "オレジナル",
+          name: "オリジナル",
           color: "#3b82f6",
           attack: 100,
           defense: 100,
           speed: 100,
           weight: 100
         });
+        setSelectedAbility(null);
       }
     });
   };
@@ -68,13 +96,19 @@ export default function CustomEraser() {
         <div className="glass-panel p-6 rounded-3xl space-y-6">
           <div className="flex gap-4 p-2 bg-slate-100 rounded-2xl">
             <button 
-              onClick={() => setFormType('normal')}
+              onClick={() => {
+                setFormType('normal');
+                setSelectedAbility(null);
+              }}
               className={`flex-1 py-3 rounded-xl font-bold transition-all ${formType === 'normal' ? 'bg-white shadow text-primary' : 'text-slate-500 hover:bg-white/50'}`}
             >
               ノーマル (Max 500pt)
             </button>
             <button 
-              onClick={() => setFormType('boss')}
+              onClick={() => {
+                setFormType('boss');
+                setSelectedAbility(null);
+              }}
               className={`flex-1 py-3 rounded-xl font-bold transition-all ${formType === 'boss' ? 'bg-white shadow text-accent' : 'text-slate-500 hover:bg-white/50'}`}
             >
               ボス (Max 2500pt)
@@ -137,10 +171,31 @@ export default function CustomEraser() {
             ))}
           </div>
 
+          <div className="space-y-4">
+            <h3 className="font-bold text-lg text-foreground">特性を選択 (オプション)</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {(formType === 'normal' ? ABILITIES_NORMAL : ABILITIES_BOSS).map(ability => (
+                <button
+                  key={ability.id}
+                  onClick={() => setSelectedAbility(selectedAbility === ability.id ? null : ability.id)}
+                  className={`p-3 rounded-xl text-sm font-bold border-2 transition-all ${
+                    selectedAbility === ability.id
+                      ? 'bg-primary text-white border-primary'
+                      : 'bg-white border-slate-200 hover:border-primary'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  disabled={selectedAbility !== ability.id && remaining < ability.cost}
+                >
+                  <div>{ability.label}</div>
+                  <div className="text-xs opacity-80">({ability.cost}pt)</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <button 
             onClick={handleSave}
             disabled={createMutation.isPending || !formData.name.trim()}
-            className="w-full playful-shadow bg-primary text-white py-4 rounded-2xl font-bold text-xl flex items-center justify-center gap-2 hover:brightness-110 disabled:opacity-50 disabled:transform-none disabled:shadow-none"
+            className="w-full playful-shadow bg-primary text-white py-4 rounded-2xl font-bold text-xl flex items-center justify-center gap-2 hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             <Save />
             {createMutation.isPending ? '保存中...' : '保存する'}
@@ -171,32 +226,40 @@ export default function CustomEraser() {
                 key={eraser.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4"
+                className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100"
               >
-                <div 
-                  className="w-10 h-10 rounded-lg shadow-inner"
-                  style={{ backgroundColor: eraser.color }}
-                />
-                <div className="flex-1 overflow-hidden">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold truncate">{eraser.name}</h3>
-                    {eraser.type === 'boss' && (
-                      <span className="bg-accent/20 text-accent-foreground text-[10px] px-2 py-0.5 rounded-full font-bold">ボス</span>
-                    )}
+                <div className="flex items-center gap-3 mb-2">
+                  <div 
+                    className="w-10 h-10 rounded-lg shadow-inner"
+                    style={{ backgroundColor: eraser.color }}
+                  />
+                  <div className="flex-1 overflow-hidden">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold truncate">{eraser.name}</h3>
+                      {eraser.type === 'boss' && (
+                        <span className="bg-accent/20 text-accent-foreground text-[10px] px-2 py-0.5 rounded-full font-bold">ボス</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="text-xs text-slate-400 flex gap-2 mt-1">
-                    <span>攻:{eraser.attack}</span>
-                    <span>防:{eraser.defense}</span>
-                    <span>速:{eraser.speed}</span>
-                  </div>
+                  <button 
+                    onClick={() => deleteMutation.mutate(eraser.id)}
+                    disabled={deleteMutation.isPending}
+                    className="p-2 text-slate-400 hover:text-destructive hover:bg-destructive/10 rounded-xl transition-colors disabled:opacity-50"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
                 </div>
-                <button 
-                  onClick={() => deleteMutation.mutate(eraser.id)}
-                  disabled={deleteMutation.isPending}
-                  className="p-2 text-slate-400 hover:text-destructive hover:bg-destructive/10 rounded-xl transition-colors disabled:opacity-50"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
+                <div className="text-xs text-slate-400 flex gap-2 flex-wrap">
+                  <span>攻:{eraser.attack}</span>
+                  <span>防:{eraser.defense}</span>
+                  <span>速:{eraser.speed}</span>
+                  <span>重:{eraser.weight}</span>
+                </div>
+                {eraser.ability && (
+                  <div className="mt-2 text-xs font-bold bg-primary/10 text-primary px-2 py-1 rounded-lg inline-block">
+                    特性: {getAbilityLabel(eraser.ability)}
+                  </div>
+                )}
               </motion.div>
             ))}
           </div>
@@ -204,4 +267,21 @@ export default function CustomEraser() {
       </div>
     </div>
   );
+}
+
+// ユーティリティ関数
+function getAbilityLabel(abilityId: string): string {
+  const labels: Record<string, string> = {
+    [ABILITY_TYPES.COATING_ATTACK_DOWN]: 'コーティング：攻撃力低下',
+    [ABILITY_TYPES.COATING_DEFENSE_DOWN]: 'コーティング：防御力低下',
+    [ABILITY_TYPES.COATING_SLIP]: 'コーティング：滑る',
+    [ABILITY_TYPES.SPIN_BLOW]: '回転：遠く吹き飛ばす',
+    [ABILITY_TYPES.SPIN_SLOW]: '回転：相手動き悪くする',
+    [ABILITY_TYPES.EXPLOSION_BLOW]: '爆発：遠く吹き飛ばす',
+    [ABILITY_TYPES.EXPLOSION_BARRIER]: '爆発：近づけない',
+    [ABILITY_TYPES.BIG_SPIN_BARRIER]: '大回転：近づけない＆吹き飛ばす',
+    [ABILITY_TYPES.JET_RUSH]: 'ジェット：相手に当たるまで進む',
+    [ABILITY_TYPES.MISSILE_ATTACK]: 'ミサイル：毎ターン3つ発射',
+  };
+  return labels[abilityId] || 'Unknown';
 }
