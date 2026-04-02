@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 
 export function serveStatic(app: Express) {
+  // CJS バンドル環境では __dirname が自動的に定義される
   const distPath = path.resolve(__dirname, "public");
 
   if (!fs.existsSync(distPath)) {
